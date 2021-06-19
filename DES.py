@@ -10,6 +10,7 @@ class DES:
         self.lower = lower
         self.upper = upper
         self.budget = budget
+        self.counteval = 0
 
     def controlParam(self, name, default):
         if name in self.control.keys():
@@ -31,16 +32,17 @@ class DES:
 
     def fn(self, x, problem):
         if (self.lower <= x).all() and (x <= self.upper).all():
+            self.counteval += 1
             return problem(x)
         else:
             return sys.float_info.max
 
     def fn_l(self, X, problem):
-        if self.problem.evaluations + len(X) <= self.budget:
+        if self.counteval + len(X) <= self.budget:
             return [self.fn(x, problem) for x in X]
         else:
             ret = []
-            budget_left = self.budget - self.problem.evaluations
+            budget_left = self.budget - self.counteval
             if budget_left > 0:
                 ret = [self.fn(X[i], problem) for i in range(max(budget_left,0))]
             return ret + [sys.float_info.max] * (len(X) - budget_left)
@@ -68,6 +70,8 @@ class DES:
 
 
     def run(self, p0):
+        self.counteval = 0
+
         N = len(p0)
         controlParam = self.controlParam
         Ft = self.controlParam("Ft", 1)  ## Scaling factor of difference vectors (a variable!)
@@ -94,10 +98,7 @@ class DES:
 
         best_fit = np.Inf  ## The best fitness found so far
         best_par = None  ## The best solution found so far
-        worst_fit = None  ## The worst solution found so far:
-        last_restart = 0
-        restart_length = 0
-        restart_number = 0
+        best_pop = []
 
         dMean = np.zeros((histSize, N))
         FtHistory = np.zeros(histSize)
@@ -158,8 +159,8 @@ class DES:
             weights = [np.log(mu + 1) - np.log(i) for i in range(1, mu + 1)]
             weights = np.divide(weights, sum(weights))
 
-            selection = [x for _, x in sorted(zip(fitness, range(mu)))]
-            selectedPoints = np.array([population[i] for i in selection])
+            selection = [x for _, x in sorted(zip(fitness, range(len(fitness))))]
+            selectedPoints = np.array([population[i] for i in selection[:mu]])
 
             history[histHead] = np.zeros((N, mu))
             history[histHead] = np.multiply(selectedPoints, histNorm / Ft)
@@ -194,9 +195,9 @@ class DES:
                 diffs[i] = np.sqrt(cc) * ((x1 - x2) + np.random.randn() * dMean[historySample[i]]) + np.sqrt(1 - cc) \
                            * np.random.randn() * pc[historySample2[i]]
 
-            population = newMean + Ft * diffs + tol * (1 - 2 / N ** 2) ** (itr / 2) * np.random.randn(diffs.shape[0],
-                                                                                                      diffs.shape[
-                                                                                                          1]) / chiN
+            population = newMean + Ft * diffs + tol * (1 - 2 / N ** 2) ** (itr / 2) * \
+                         np.random.randn(diffs.shape[0], diffs.shape[1]) / chiN
+
             population = [self.delete_infs_nans(p) for p in population]
 
             populationTemp = population
@@ -216,6 +217,7 @@ class DES:
             if fitness[wb] == best_fit:
                 best_fit = fitness[wb]
                 best_par = population[wb]
+                best_pop = population
             else:
                 best_par = populationRepaired[wb]
 
@@ -231,10 +233,13 @@ class DES:
             if fn_cum < best_fit:
                 best_fit = fn_cum
                 best_par = cumMeanRepaired
-
+                best_pop
             if fitness[0] <= stopfitness:
                 msg = "Stop fitness reached."
                 break
+
+        return best_par, best_pop
+
 
 
 
