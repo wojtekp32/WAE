@@ -18,12 +18,7 @@ class Hybrid:
         N = len(x0)
         init_ft = 1/np.sqrt(2)
         best_par = None
-        # cma = CMA_ES(self.problem, control=self.control_cma, lower=self.lower, upper=self.upper,
-        #              budget=int(self.budget), stop=True)
-        # res = cma.run(x0)
-        # self.counteval = cma.counteval
-        #
-        # if not res:
+
         while self.counteval < self.budget:
 
             des_budget = int(np.floor(30 * N))
@@ -42,7 +37,7 @@ class Hybrid:
             res = cma.run(new_x0)
             best_par = cma.best_par
             self.counteval += cma.counteval
-            init_ft *= 2
+            # init_ft *= 2
             x0 = self.lower + ((np.random.rand(N) + np.random.rand(N)) * (self.upper - self.problem.lower_bounds) / 2)
             if res:
                 return

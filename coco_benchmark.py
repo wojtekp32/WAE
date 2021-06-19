@@ -1,23 +1,25 @@
 from __future__ import division, print_function
 import cocoex, cocopp
 import os, webbrowser
-
+import numpy as np
 from DES import DES
 from CMA_ES import CMA_ES
 from Hybrid import Hybrid
 
-MODE = "CMA"
+MODE = "Hybrid"
 
 suite_name = "bbob"
-output_folder = "WAE_Hybrid_f24"
+output_folder = "Hybrid_I"
 budget_multiplier = 1000
-dimensions = [2,3,5]
+dimensions = [2, 3, 5, 10, 20]
 suite = cocoex.Suite(suite_name, "", "")
 observer = cocoex.Observer(suite_name, "result_folder: " + output_folder)
 minimal_print = cocoex.utilities.MiniPrint()
 
+np.random.seed(123)
+
 for problem in suite:
-    if problem.dimension not in dimensions or not "f24" in problem.name:
+    if problem.dimension not in dimensions:
         continue
     problem.observe_with(observer)
     x0 = problem.initial_solution
@@ -36,7 +38,7 @@ for problem in suite:
     # while (problem.evaluations < budget
     #        and not problem.final_target_hit):
     #     solver.run(x0)
-    #     x0 = problem.lower_bounds + ((rand(problem.dimension) + rand(problem.dimension)) *
+    #     x0 = problem.lower_bounds + ((np.random.rand(problem.dimension) + np.random.rand(problem.dimension)) *
     #                 (problem.upper_bounds - problem.lower_bounds) / 2)
     minimal_print(problem, final=problem.index == len(suite) - 1)
 
